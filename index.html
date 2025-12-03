@@ -1,0 +1,904 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>EDUCATION SERVICES UNIT DATABASE - 4TH DISTRICT</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dexie@3.2.2/dist/dexie.min.js"></script>
+<style>
+body{font-family:Arial,sans-serif;margin:0;padding:20px;background:#f5f7fb;}
+h1,h2{margin-bottom:12px;}
+.card{background:#fff;border-radius:10px;padding:16px;margin-bottom:20px;box-shadow:0 4px 12px rgba(0,0,0,0.05);}
+form{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+label{font-size:12px;color:#444}
+input,select{padding:8px;border-radius:6px;border:1px solid #d6dbe6;}
+.full{grid-column:1/-1}
+button{padding:8px 12px;border:none;border-radius:6px;cursor:pointer}
+button.primary{background:#2b6ef6;color:#fff}
+button.ghost{background:#fff;border:1px solid #d6dbe6;color:#000}
+table{width:100%;border-collapse:collapse;margin-top:12px}
+th,td{padding:8px;border-bottom:1px solid #eef2f8;text-align:left}
+tr.duplicate{background:#fff8e6}
+.program-list{margin:0;padding-left:16px;list-style:disc;}
+.searchbar{display:flex;gap:8px;margin-top:12px;}
+#importModal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:9999;justify-content:center;align-items:center;}
+#importModalContent{background:#fff;padding:20px 30px;border-radius:10px;text-align:center;min-width:300px;}
+#progressBarContainer{width:100%;background:#eee;border-radius:6px;margin-top:10px;}
+#importProgressBar{width:0%;height:20px;background:#2b6ef6;border-radius:6px;text-align:center;color:#fff;}
+#importProgressText{margin-top:4px;font-size:12px;}
+#dupWarnModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:10000;justify-content:center;align-items:center;}
+#dupWarnContent{background:#fff;padding:20px;border-radius:10px;min-width:360px;max-width:90%;box-shadow:0 10px 30px rgba(0,0,0,0.2);}
+.dup-list{max-height:200px;overflow:auto;border:1px solid #eee;padding:8px;border-radius:6px;margin:8px 0;}
+.small{font-size:13px;color:#444}
+.dup-reason{background:#fff3cd;padding:8px;border-radius:6px;margin-bottom:8px}
+.tabbar{margin-bottom:20px;display:flex;gap:8px}
+kbd{background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:12px}
+</style>
+</head>
+<body>
+<h1>EDUCATION SERVICES UNIT DATABASE - 4TH DISTRICT</h1>
+
+<!-- Tabs -->
+<div class="tabbar">
+  <button id="tabBeneficiaries" class="primary">Beneficiaries</button>
+  <button id="tabReports" class="ghost">Reports</button>
+</div>
+
+<!-- BENEFICIARIES TAB -->
+<div id="beneficiariesTab">
+  <div class="card">
+    <h2>Add / Edit Beneficiary</h2>
+    <form id="beneficiaryForm">
+      <div><label>Application Date</label><input id="applicationDate" type="date" required /></div>
+      <div><label>First Name</label><input id="firstName" type="text" required /></div>
+      <div><label>Middle Name</label><input id="middleName" type="text" /></div>
+      <div><label>Last Name</label><input id="lastName" type="text" required /></div>
+      <div><label>Suffix</label>
+        <select id="suffix">
+          <option>N/A</option><option>Jr.</option><option>Sr.</option><option>I</option><option>II</option><option>III</option><option>IV</option>
+        </select>
+      </div>
+      <div><label>Relationship</label>
+        <select id="relationship">
+          <option>Self</option><option>Mother</option><option>Father</option><option>Sister</option><option>Brother</option>
+          <option>Grandmother</option><option>Grandfather</option><option>Other</option>
+        </select>
+      </div>
+      <div><label>Name of Beneficiary/Client</label><input id="beneficiaryName" type="text" placeholder="Auto-filled if Self" /></div>
+      <div><label>School</label><input id="school" type="text" /></div>
+      <div><label>Grade/Year Level</label><input id="gradeLevel" type="text" /></div>
+      <div><label>School Year</label>
+        <select id="schoolYear">
+          <option>2022</option><option>2023</option><option>2024</option><option>2025</option>
+        </select>
+      </div>
+      <div><label>Birth Date</label><input id="birthDate" type="date" /></div>
+      <div><label>Civil Status</label>
+        <select id="civilStatus">
+          <option>Single</option><option>Married</option><option>Widowed</option><option>Separated</option><option>Divorced</option>
+        </select>
+      </div>
+      <div><label>Gender</label>
+        <select id="gender">
+          <option>Male</option><option>Female</option><option>Other</option>
+        </select>
+      </div>
+      <div><label>Family Member</label><input id="familyMember" type="text" /></div>
+      <div><label>CP Number</label><input id="cpNumber" type="tel" /></div>
+      <div>
+  <label>Municipality</label>
+  <select id="municipality" required>
+    <option value="">-- Select Municipality --</option>
+    <option value="CITY OF SANTIAGO">CITY OF SANTIAGO</option>
+    <option value="CORDON">CORDON</option>
+    <option value="SAN AGUSTIN">SAN AGUSTIN</option>
+    <option value="JONES">JONES</option>
+    <option value="DINAPIGUE">DINAPIGUE</option>
+  </select>
+</div>
+
+<div>
+  <label>Barangay</label>
+  <select id="barangay" required>
+    <option value="">-- Select Barangay --</option>
+  </select>
+</div>
+
+      <div><label>Province</label><input id="province" type="text" value="ISABELA" readonly /></div>
+      <div><label>Programs (comma separated)</label><input id="programs" type="text" placeholder="Program1, Program2" /></div>
+      <div><label>Amount</label><input id="amount" type="text" placeholder="e.g., 500, 1000, 2500" /></div>
+      <div><label>Status</label>
+        <select id="status"><option>Paid</option><option>Unpaid</option></select>
+      </div>
+      <div><label><input type="checkbox" id="forceEditNames"/> Force Edit Name, Birthdate, Barangay, CP, Gender, Civil Status</label></div>
+      <div class="full actions">
+        <button type="button" class="primary" id="saveBeneficiaryBtn">Save Beneficiary</button>
+        <button type="button" class="ghost" id="clearForm">Clear</button>
+        <button type="button" class="ghost" id="exportXlsxBtn">Export XLSX</button>
+        <button type="button" class="ghost" id="importXlsxBtn">Import XLSX</button>
+        <button type="button" class="ghost" id="deleteAllBtn" style="background:#ff4d4d;color:#fff;">Delete All Records</button>
+        <button type="button" class="ghost" id="detectDuplicatesBtn" style="background:#ffcc00;color:#000;">Detect Duplicates</button>
+      </div>
+    </form>
+  </div>
+
+<div id="paginationControls" style="margin-top:10px; display:flex; justify-content:flex-end; gap:6px; align-items:center;">
+  <button id="prevPageBtn" class="ghost">Previous</button>
+  <span id="pageInfo">Page 1</span>
+  <button id="nextPageBtn" class="ghost">Next</button>
+</div>
+
+  <div class="card">
+    <h2>Beneficiaries</h2>
+    <div class="searchbar">
+      <input id="globalSearch" placeholder="Search..." style="flex:1;padding:8px;border-radius:6px;border:1px solid #d6dbe6" />
+      <button id="clearSearch" class="ghost">Clear</button>
+      <select id="filterSchoolYear">
+        <option value="">All School Years</option>
+        <option>2022</option><option>2023</option><option>2024</option><option>2025</option>
+      </select>
+      <select id="filterDuplicate">
+        <option value="">All Records</option>
+        <option value="yes">Duplicates Only</option>
+        <option value="no">Non-Duplicates</option>
+      </select>
+    </div>
+<select id="filterMunicipality">
+  <option value="">All Municipalities</option>
+  <option>CITY OF SANTIAGO</option>
+  <option>CORDON</option>
+  <option>SAN AGUSTIN</option>
+  <option>JONES</option>
+  <option>DINAPIGUE</option>
+</select>
+
+<select id="filterBarangay">
+  <option value="">All Barangays</option>
+</select>
+
+    <table id="beneficiariesTable">
+      <thead>
+        <tr>
+          <th>ID</th><th>Application Date</th><th>Name</th><th>Relationship</th><th>Beneficiary</th>
+          <th style="display:none;">School</th><th>Grade/Year Level</th><th>School Year</th><th>Birth</th>
+          <th>Civil Status</th><th>Gender</th><th>Family</th><th>CP</th><th>Barangay</th>
+          <th>Municipality</th><th style="display:none;">Province</th><th>Programs</th><th>Amount</th>
+          <th>Status</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <input id="fileInput" type="file" accept=".xlsx,.xls" style="display:none" />
+
+  <!-- Import Progress Modal -->
+  <div id="importModal">
+    <div id="importModalContent">
+      <h3>Importing...</h3>
+      <div id="progressBarContainer">
+        <div id="importProgressBar">0%</div>
+      </div>
+      <div id="importProgressText">0%</div>
+      <button id="importCancelBtn" style="margin-top:12px;">Cancel Import</button>
+    </div>
+  </div>
+
+  <!-- Duplicate Warning Modal -->
+  <div id="dupWarnModal">
+    <div id="dupWarnContent">
+      <h3>Duplicate Found</h3>
+      <div class="dup-reason small" id="dupReasonText"></div>
+      <div class="small">Matching existing record(s):</div>
+      <div class="dup-list" id="dupList"></div>
+      <div style="margin-top:12px;text-align:right">
+        <button id="cancelSaveBtn" class="ghost">Cancel</button>
+        <button id="confirmSaveBtn" class="primary">Save Anyway</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- REPORTS TAB -->
+<div id="reportsTab" style="display:none;">
+  <div class="card">
+    <h2>Program Report per Barangay</h2>
+    <div style="margin-bottom:10px">
+      <div style="margin-bottom:10px">
+  <label>Filter School Year: </label>
+  <select id="reportFilterSchoolYear">
+    <option value="">All</option>
+    <option>2022</option><option>2023</option><option>2024</option><option>2025</option>
+  </select>
+
+  <label style="margin-left:10px">Municipality: </label>
+  <select id="reportFilterMunicipality">
+    <option value="">All</option>
+    <option>CITY OF SANTIAGO</option>
+    <option>CORDON</option>
+    <option>SAN AGUSTIN</option>
+    <option>JONES</option>
+    <option>DINAPIGUE</option>
+  </select>
+
+  <label style="margin-left:10px">Barangay: </label>
+  <select id="reportFilterBarangay">
+    <option value="">All</option>
+  </select>
+
+  <button id="refreshReportBtn" class="ghost" style="margin-left:8px">Refresh</button>
+</div>
+
+    <table id="reportTable">
+      <thead>
+        <tr>
+          <th>Barangay</th>
+          <th>Program</th>
+          <th>Total Beneficiaries</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+
+let currentPage = 1;
+const recordsPerPage = 50;
+let filteredRecords = []; // store filtered results for pagination
+
+// ===== MUNICIPALITY → BARANGAY LIST =====
+const barangaysByMunicipality = {
+  "CITY OF SANTIAGO": [
+    "ABRA","AMBALATUNGAN","BALINTOCATOC","BALUARTE","BANNAWAG NORTE","BATAL",
+    "BUENAVISTA","CABULAY","CALAO EAST (POB.)","CALAO WEST (POB.)","CALAOCAN",
+    "VILLA GONZAGA","CENTRO EAST (POB.)","CENTRO WEST (POB.)","DIVISORIA",
+    "DUBINAN EAST","DUBINAN WEST","LUNA","MABINI","MALVAR","NABBUAN",
+    "NAGGASICAN","PATUL","PLARIDEL","RIZAL","ROSARIO","SAGANA","SALVADOR",
+    "SAN ANDRES","SAN ISIDRO","SAN JOSE","SINILI","SINSAYON","SANTA ROSA",
+    "VICTORY NORTE","VICTORY SUR","VILLASIS"
+  ],
+  "CORDON": [
+    "AGUINALDO (RIZALUNA ESTE)","CALIMATUROD","CAPIRPIRIWAN","CAQUILINGAN (SAN LUIS)",
+    "DALLAO","GAYONG","LAUREL (CENTRO NORTE)","MAGSAYSAY (CENTRO SUR OESTE)",
+    "MALAPAT","OSMENA (CENTRO SUR ESTE)","QUEZON (CENTRO NORTE ESTE)",
+    "QUIRINO (MANASIN)","RIZALUNA (RIZALUNA OESTE)","ROXAS POB. (CENTRO SUR)",
+    "SAGAT","SAN JUAN (SAN JUAN ESTE)","TALIKTIK","TANGGAL","TARINSING",
+    "TUROD NORTE","TUROD SUR","VILLAMIEMBAN","VILLAMARZO","ANONANG (BALITOC*)",
+    "CAMARAO","WIGAN"
+  ],
+  "SAN AGUSTIN": [
+    "BAUTISTA","CALAOCAN","DABUBU GRANDE","DABUBU PEQUEÑO","DAPPIG","LAOAG",
+    "MAPALAD","MASAYA CENTRO (POB.)","MASAYA NORTE","MASAYA SUR","NEMMATAN",
+    "PALACIAN","PANANG","QUIMALABASA NORTE","QUIMALABASA SUR","RANG-AY",
+    "SALAY","SAN ANTONIO","SANTO NIÑO","SANTOS","SINAOANGAN NORTE",
+    "SINAOANGAN SUR","VIRGONEZA"
+  ],
+  "JONES": [
+    "ABULAN","ADDALAM","ARUBUB","BANNAWAG","BANTAY","BARANGAY I (POB.)",
+    "BARANGAY II (POB.)","BARANGCUAG","DALIBUBON","DALIGAN","DIARAO",
+    "DIBULUAN","DICAMAY I","DICAMAY II","DIPANGIT","DISIMPIT","DIVINAN",
+    "DUMAWING","FUGU","LACAB","LINAMANAN","LINOMOT","MALANNIT","MINURI",
+    "NAMNAMA","NAPALIONG","PALAGAO","PAPAN ESTE","PAPAN WESTE","PAYAC",
+    "PONGPONGAN","SAN ANTONIO","SAN ISIDRO","SAN JOSE","SAN ROQUE",
+    "SAN SEBASTIAN","SAN VICENTE","SANTA ISABEL","SANTO DOMINGO","TUPAX",
+    "USOL","VILLA BELLO"
+  ],
+  "DINAPIGUE": [
+    "AYOD","BUCAL SUR","BUCAL NORTE","DIBULO","DIGUMASED (POB.)","DIMALUADE"
+  ]
+};
+
+// ===== Update Barangay When Municipality Changes =====
+const municipalitySelect = document.getElementById("municipality");
+const barangaySelect = document.getElementById("barangay");
+const filterMunicipality = document.getElementById('filterMunicipality');
+const filterBarangay = document.getElementById('filterBarangay');
+
+municipalitySelect.addEventListener("change", () => {
+  const mun = municipalitySelect.value;
+  barangaySelect.innerHTML = `<option value="">-- Select Barangay --</option>`;
+
+  if (barangaysByMunicipality[mun]) {
+    barangaysByMunicipality[mun].forEach(brgy => {
+      const option = document.createElement("option");
+      option.value = brgy;
+      option.textContent = brgy;
+      barangaySelect.appendChild(option);
+    });
+  }
+});
+
+const reportFilterMunicipality = document.getElementById('reportFilterMunicipality');
+const reportFilterBarangay = document.getElementById('reportFilterBarangay');
+
+reportFilterMunicipality.addEventListener('change', () => {
+  const mun = reportFilterMunicipality.value;
+  reportFilterBarangay.innerHTML = `<option value="">All</option>`;
+  if (barangaysByMunicipality[mun]) {
+    barangaysByMunicipality[mun].forEach(brgy => {
+      const option = document.createElement("option");
+      option.value = brgy;
+      option.textContent = brgy;
+      reportFilterBarangay.appendChild(option);
+    });
+  }
+  generateReportTable();
+});
+
+reportFilterBarangay.addEventListener('change', generateReportTable);
+
+
+filterMunicipality.addEventListener('change', () => {
+  const mun = filterMunicipality.value;
+  filterBarangay.innerHTML = `<option value="">All Barangays</option>`;
+  if (barangaysByMunicipality[mun]) {
+    barangaysByMunicipality[mun].forEach(brgy => {
+      const option = document.createElement("option");
+      option.value = brgy;
+      option.textContent = brgy;
+      filterBarangay.appendChild(option);
+    });
+  }
+  renderTable(document.getElementById('globalSearch').value);
+});
+
+filterBarangay.addEventListener('change', () => {
+  renderTable(document.getElementById('globalSearch').value);
+});
+
+// ===== Dexie DB Setup =====
+const db = new Dexie("BeneficiariesDB");
+db.version(1).stores({
+  beneficiaries: "++id,firstName,middleName,lastName,cpNumber,beneficiaryName,schoolYear,birthDate,barangay"
+});
+
+function todayISO(){
+  const d=new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function generate5DigitID(){ return Math.floor(10000+Math.random()*90000); }
+
+// ===== Auto-fill Beneficiary Name =====
+const relationshipInput=document.getElementById('relationship');
+const beneficiaryNameInput=document.getElementById('beneficiaryName');
+const firstNameInput=document.getElementById('firstName');
+const middleNameInput=document.getElementById('middleName');
+const lastNameInput=document.getElementById('lastName');
+
+function updateBeneficiaryName(){
+  if(relationshipInput.value==='Self'){
+    beneficiaryNameInput.value=`${firstNameInput.value} ${middleNameInput.value} ${lastNameInput.value}`.replace(/\s+/g,' ').trim();
+    beneficiaryNameInput.readOnly=true;
+  }else{
+    beneficiaryNameInput.readOnly=false;
+    // keep existing value (don't clear to allow convenience)
+  }
+}
+[firstNameInput,middleNameInput,lastNameInput,relationshipInput].forEach(el=>el.addEventListener('input',updateBeneficiaryName));
+let editingId=null;
+
+// ===== Helper: parse Excel date =====
+function parseExcelDate(value){
+  if(!value) return '';
+  if(typeof value==='number'){
+    // Excel serial to JS date
+    const dt=new Date(Math.round((value-25569)*86400*1000));
+    return dt.toISOString().split('T')[0];
+  }
+  if(typeof value==='string'){
+    // handle multiple formats mm/dd/yyyy or yyyy-mm-dd or "January 1, 1970"
+    // try mm/dd/yyyy or dd/mm/yyyy heuristics: we assume mm/dd/yyyy from user's earlier requirements
+    const parts=value.split(/[\/\-]/);
+    if(parts.length===3){
+      // detect which part is year (4 digits)
+      if(parts[2].length===4){
+        const mm=parseInt(parts[0],10)-1;
+        const dd=parseInt(parts[1],10);
+        const yyyy=parseInt(parts[2],10);
+        const dt=new Date(yyyy,mm,dd);
+        if(!isNaN(dt)) return dt.toISOString().split('T')[0];
+      } else if(parts[0].length===4){
+        // yyyy-mm-dd style
+        const yyyy=parseInt(parts[0],10);
+        const mm=parseInt(parts[1],10)-1;
+        const dd=parseInt(parts[2],10);
+        const dt=new Date(yyyy,mm,dd);
+        if(!isNaN(dt)) return dt.toISOString().split('T')[0];
+      }
+    }
+    const dt=new Date(value);
+    if(!isNaN(dt)) return dt.toISOString().split('T')[0];
+  }
+  return '';
+}
+
+// ===== Render Table =====
+async function renderTable(filter='') {
+  const tbody = document.querySelector('#beneficiariesTable tbody');
+  tbody.innerHTML = '';
+
+  let arr = await db.beneficiaries.toArray();
+  const q = filter.toLowerCase();
+  const schoolFilter = document.getElementById('filterSchoolYear').value;
+  const dupFilter = document.getElementById('filterDuplicate').value;
+  const municipalityFilter = document.getElementById('filterMunicipality').value;
+  const barangayFilter = document.getElementById('filterBarangay').value;
+
+  // Filter records
+  filteredRecords = arr.filter(b => {
+    if(q && !([b.firstName,b.middleName,b.lastName,b.beneficiaryName,b.familyMember,b.cpNumber,b.barangay,b.municipality,b.status,b.civilStatus,b.gender,b.schoolYear,b.amount].join(' ') + ' ' + (b.programs||[]).join(' ')).toLowerCase().includes(q)) return false;
+    if(schoolFilter && b.schoolYear !== schoolFilter) return false;
+    if(dupFilter==='yes' && !b.duplicate) return false;
+    if(dupFilter==='no' && b.duplicate) return false;
+    if(municipalityFilter && b.municipality !== municipalityFilter) return false;
+    if(barangayFilter && b.barangay !== barangayFilter) return false;
+    return true;
+  });
+
+  // Sort by barangay, then by last name, first name, middle name
+filteredRecords.sort((a, b) => {
+    const barangayCompare = (a.barangay||'').toLowerCase().localeCompare((b.barangay||'').toLowerCase());
+    if (barangayCompare !== 0) return barangayCompare;
+    // Compare by last name, first name, middle name
+    const lastCompare = (a.lastName||'').toLowerCase().localeCompare((b.lastName||'').toLowerCase());
+    if (lastCompare !== 0) return lastCompare;
+    const firstCompare = (a.firstName||'').toLowerCase().localeCompare((b.firstName||'').toLowerCase());
+    if (firstCompare !== 0) return firstCompare;
+    return (a.middleName||'').toLowerCase().localeCompare((b.middleName||'').toLowerCase());
+});
+
+
+  // Pagination
+  const totalPages = Math.ceil(filteredRecords.length / recordsPerPage);
+  if(currentPage > totalPages) currentPage = totalPages || 1;
+  const startIndex = (currentPage-1) * recordsPerPage;
+  const endIndex = startIndex + recordsPerPage;
+  const recordsToShow = filteredRecords.slice(startIndex, endIndex);
+
+  // Render rows
+  for(const b of recordsToShow){
+    let birthFormatted='';
+    if(b.birthDate){
+      const dt=new Date(b.birthDate);
+      if(!isNaN(dt)){
+        const mm=String(dt.getMonth()+1).padStart(2,'0');
+        const dd=String(dt.getDate()).padStart(2,'0');
+        const yyyy=String(dt.getFullYear());
+        birthFormatted=`${mm}/${dd}/${yyyy}`;
+      } else birthFormatted=b.birthDate;
+    }
+
+    const tr=document.createElement('tr');
+    tr.className=b.duplicate?'duplicate':'';
+    tr.innerHTML=`<td>${b.id}</td>
+      <td>${b.applicationDate||''}</td>
+      <td>${b.firstName} ${b.middleName} ${b.lastName} ${b.suffix && b.suffix!=='N/A'?b.suffix:''}</td>
+      <td>${b.relationship||''}</td>
+      <td>${b.beneficiaryName||''}</td>
+      <td style="display:none;">${b.school||''}</td>
+      <td>${b.gradeLevel||''}</td>
+      <td>${b.schoolYear||''}</td>
+      <td>${birthFormatted}</td>
+      <td>${b.civilStatus||''}</td>
+      <td>${b.gender||''}</td>
+      <td>${b.familyMember||''}</td>
+      <td>${b.cpNumber||''}</td>
+      <td>${b.barangay||''}</td>
+      <td>${b.municipality||''}</td>
+      <td style="display:none;">${b.province||'Isabela'}</td>
+      <td><ul class='program-list'>${(b.programs||[]).map(p=>`<li>${p}</li>`).join('')}</ul></td>
+      <td>${b.amount||''}</td>
+      <td>${b.status||'Unpaid'}</td>
+      <td><button onclick="editEntry(${b.id})">Edit</button> <button onclick="deleteEntry(${b.id})">Delete</button></td>`;
+    tbody.appendChild(tr);
+  }
+
+  // Update page info
+  document.getElementById('pageInfo').textContent = `Page ${currentPage} of ${totalPages || 1}`;
+}
+
+
+async function editEntry(id){
+  const b = await db.beneficiaries.get(id);
+  if(!b) return;
+  editingId = id;
+
+  const fields = ['applicationDate','firstName','middleName','lastName','suffix','relationship','beneficiaryName',
+                  'school','gradeLevel','schoolYear','birthDate','civilStatus','gender','familyMember','cpNumber',
+                  'barangay','municipality','province','programs','amount','status'];
+
+  fields.forEach(k => {
+    const el = document.getElementById(k);
+    if(!el) return;
+    if(k==='programs') el.value = (b.programs||[]).join(', ');
+    else if(k==='birthDate') el.value = b.birthDate||'';
+    else el.value = (b[k] !== undefined && b[k] !== null) ? b[k] : '';
+  });
+
+  // Lock fields until Force Edit is checked
+  ['firstName','middleName','lastName','birthDate','barangay','cpNumber','gender','civilStatus'].forEach(f=>{
+    const el = document.getElementById(f);
+    if(!el) return;
+    if(el.tagName.toLowerCase() === 'select') el.disabled = true;
+    else el.readOnly = true;
+  });
+
+  const fe = document.getElementById('forceEditNames');
+  fe.checked = false;
+  fe.onchange = () => {
+    const editable = fe.checked;
+    ['firstName','middleName','lastName','birthDate','barangay','cpNumber','gender','civilStatus'].forEach(f=>{
+      const el = document.getElementById(f);
+      if(!el) return;
+      if(el.tagName.toLowerCase() === 'select') el.disabled = !editable;
+      else el.readOnly = !editable;
+    });
+  };
+
+  // Prefill municipality & trigger change to load barangays dynamically
+  const municipalitySelect = document.getElementById('municipality');
+  municipalitySelect.value = b.municipality || '';
+  municipalitySelect.dispatchEvent(new Event('change'));
+
+  // Prefill barangay (after change event)
+  setTimeout(() => {
+    document.getElementById('barangay').value = b.barangay || '';
+  }, 10);
+}
+
+document.getElementById('prevPageBtn').onclick = () => {
+  if(currentPage > 1){
+    currentPage--;
+    renderTable(document.getElementById('globalSearch').value);
+  }
+};
+
+document.getElementById('nextPageBtn').onclick = () => {
+  const totalPages = Math.ceil(filteredRecords.length / recordsPerPage);
+  if(currentPage < totalPages){
+    currentPage++;
+    renderTable(document.getElementById('globalSearch').value);
+  }
+};
+
+
+async function deleteEntry(id){
+  if(!confirm('Delete this record?')) return;
+  await db.beneficiaries.delete(id);
+  await renderTable();
+  // If reports currently visible, refresh them
+  if(document.getElementById('reportsTab').style.display !== 'none') generateReportTable();
+}
+
+// ===== Duplicate search helper =====
+async function findDuplicatesInDB(candidate){
+  const matches = [];
+  const nameKey = `${(candidate.firstName||'').trim()} ${(candidate.middleName||'').trim()} ${(candidate.lastName||'').trim()}`.replace(/\s+/g,' ').trim().toLowerCase();
+  const all = await db.beneficiaries.toArray();
+  for(const e of all){
+    // Skip current editing record
+    if(editingId && e.id === editingId) continue;
+
+    const eName = `${(e.firstName||'').trim()} ${(e.middleName||'').trim()} ${(e.lastName||'').trim()}`.replace(/\s+/g,' ').trim().toLowerCase();
+    const birthMatch = candidate.birthDate && candidate.birthDate.trim() !== '' && e.birthDate === candidate.birthDate;
+    const cpMatch = candidate.cpNumber && candidate.cpNumber.trim() !== '' && e.cpNumber && e.cpNumber.trim() === candidate.cpNumber.trim();
+    const nameMatch = nameKey.length>0 && eName === nameKey;
+    if(nameMatch || birthMatch || cpMatch) matches.push({record:e, reasons:{name:nameMatch,birth:birthMatch,cp:cpMatch}});
+  }
+  return matches;
+}
+
+// ===== Save Beneficiary =====
+async function saveBeneficiaryRecord(forceSave=false){
+  const forceEdit = document.getElementById('forceEditNames').checked;
+
+  const existingRec = editingId ? await db.beneficiaries.get(editingId) : null;
+
+  const rec = {
+    id: editingId ? editingId : generate5DigitID(),
+    applicationDate: document.getElementById('applicationDate').value || todayISO(),
+    firstName: forceEdit ? firstNameInput.value.trim() : (existingRec ? existingRec.firstName : firstNameInput.value.trim()),
+    middleName: forceEdit ? middleNameInput.value.trim() : (existingRec ? existingRec.middleName : middleNameInput.value.trim()),
+    lastName: forceEdit ? lastNameInput.value.trim() : (existingRec ? existingRec.lastName : lastNameInput.value.trim()),
+    suffix: forceEdit ? document.getElementById('suffix').value : (existingRec ? existingRec.suffix : document.getElementById('suffix').value),
+    birthDate: forceEdit ? document.getElementById('birthDate').value : (existingRec ? existingRec.birthDate : document.getElementById('birthDate').value),
+    civilStatus: forceEdit ? document.getElementById('civilStatus').value : (existingRec ? existingRec.civilStatus : document.getElementById('civilStatus').value),
+    gender: forceEdit ? document.getElementById('gender').value : (existingRec ? existingRec.gender : document.getElementById('gender').value),
+    cpNumber: forceEdit ? document.getElementById('cpNumber').value.trim() : (existingRec ? existingRec.cpNumber : document.getElementById('cpNumber').value.trim()),
+    barangay: forceEdit ? document.getElementById('barangay').value.trim() : (existingRec ? existingRec.barangay : document.getElementById('barangay').value.trim()),
+    municipality: forceEdit ? document.getElementById('municipality').value.trim() : (existingRec ? existingRec.municipality : document.getElementById('municipality').value.trim()),
+
+    // always editable
+    relationship: relationshipInput.value,
+    beneficiaryName: beneficiaryNameInput.value.trim(),
+    school: document.getElementById('school').value.trim(),
+    gradeLevel: document.getElementById('gradeLevel').value.trim(),
+    schoolYear: document.getElementById('schoolYear').value,
+    programs: document.getElementById('programs').value.split(',').map(p=>p.trim()).filter(Boolean),
+    amount: document.getElementById('amount').value.trim(),
+    status: document.getElementById('status').value,
+    province: document.getElementById('province').value,
+    familyMember: document.getElementById('familyMember').value.trim(),
+    duplicate: false
+  };
+
+  // duplicate detection
+  if(!forceSave){
+    const matches = await findDuplicatesInDB(rec);
+    if(matches.length > 0){
+      let reasonsSet = new Set();
+      dupList.innerHTML='';
+      for(const m of matches){
+        const r = m.record;
+        const reasonParts=[];
+        if(m.reasons.name) reasonParts.push('Name');
+        if(m.reasons.birth) reasonParts.push('Birthdate');
+        if(m.reasons.cp) reasonParts.push('CP Number');
+        reasonParts.forEach(x=>reasonsSet.add(x));
+
+        const li=document.createElement('div'); 
+        li.className='small';
+        li.innerHTML=`<strong>ID:</strong> ${r.id} — ${r.firstName} ${r.middleName} ${r.lastName} <br> <strong>Birth:</strong> ${r.birthDate||'(empty)'} &nbsp; <strong>CP:</strong> ${r.cpNumber||'(empty)'} <br> <strong>Barangay:</strong> ${r.barangay||'(empty)'} <hr style="margin:8px 0">`;
+        dupList.appendChild(li);
+      }
+      dupReasonText.textContent=`Detected match by: ${Array.from(reasonsSet).join(', ')}`;
+      dupWarnModal.style.display='flex';
+      cancelSaveBtn.onclick = ()=>{ dupWarnModal.style.display='none'; };
+      confirmSaveBtn.onclick = async()=>{ dupWarnModal.style.display='none'; await saveBeneficiaryRecord(true); };
+      return;
+    }
+  }
+
+  if(editingId){
+    await db.beneficiaries.put(rec); 
+    editingId = null;
+  } else {
+    try{ await db.beneficiaries.add(rec); } 
+    catch(err){ await db.beneficiaries.put(rec); }
+  }
+
+  document.getElementById('beneficiaryForm').reset();
+  beneficiaryNameInput.readOnly=false;
+  renderTable();
+  if(document.getElementById('reportsTab').style.display !== 'none') generateReportTable();
+}
+// Save button
+document.getElementById('saveBeneficiaryBtn').onclick=async()=>{ await saveBeneficiaryRecord(false); };
+
+// Clear Form
+document.getElementById('clearForm').onclick=()=>{
+  document.getElementById('beneficiaryForm').reset();
+  beneficiaryNameInput.readOnly=false;
+  editingId=null;
+  document.getElementById('forceEditNames').checked=false;
+};
+
+// Delete All
+document.getElementById('deleteAllBtn').onclick=async()=>{
+  if(!confirm("Are you sure you want to delete ALL records?")) return;
+  await db.beneficiaries.clear();
+  renderTable();
+  alert("All records deleted.");
+  if(document.getElementById('reportsTab').style.display !== 'none') generateReportTable();
+};
+
+// Search & Filter
+document.getElementById('globalSearch').oninput=e=>renderTable(e.target.value);
+document.getElementById('clearSearch').onclick=()=>{ document.getElementById('globalSearch').value=''; renderTable(); };
+document.getElementById('filterSchoolYear').onchange=()=>renderTable(document.getElementById('globalSearch').value);
+document.getElementById('filterDuplicate').onchange=()=>renderTable(document.getElementById('globalSearch').value);
+
+// Export XLSX
+document.getElementById('exportXlsxBtn').onclick=async()=>{
+  const arr = await db.beneficiaries.toArray();
+  const data = arr.map(b=>({
+    ID:b.id, ApplicationDate:b.applicationDate, FirstName:b.firstName,
+    MiddleName:b.middleName, LastName:b.lastName, Suffix:b.suffix!=='N/A'?b.suffix:'',
+    Relationship:b.relationship, BeneficiaryName:b.beneficiaryName, School:b.school,
+    GradeLevel:b.gradeLevel, SchoolYear:b.schoolYear, Birth:b.birthDate,
+    CivilStatus:b.civilStatus, Gender:b.gender, Family:b.familyMember,
+    CP:b.cpNumber, Barangay:b.barangay, Municipality:b.municipality, Province:b.province,
+    Programs:(b.programs||[]).join(' | '), Amount:b.amount||'', Status:b.status
+  }));
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Beneficiaries');
+  XLSX.writeFile(wb,'beneficiaries.xlsx');
+};
+
+// Import XLSX (with progress)
+let cancelImport=false;
+document.getElementById('importXlsxBtn').onclick=()=>document.getElementById('fileInput').click();
+document.getElementById('importCancelBtn').onclick=()=>{ cancelImport=true; };
+document.getElementById('fileInput').onchange=async e=>{
+  const file=e.target.files[0]; if(!file) return;
+  cancelImport=false;
+  const modal=document.getElementById('importModal');
+  const progressBar=document.getElementById('importProgressBar');
+  const progressText=document.getElementById('importProgressText');
+  modal.style.display='flex'; progressBar.style.width='0%'; progressBar.textContent='0%'; progressText.textContent='0%';
+  const reader=new FileReader();
+  reader.onload=async evt=>{
+    const data=new Uint8Array(evt.target.result);
+    const wb=XLSX.read(data,{type:'array'});
+    const ws=wb.Sheets[wb.SheetNames[0]];
+    const json=XLSX.utils.sheet_to_json(ws,{defval:''});
+
+    const existing=await db.beneficiaries.toArray();
+    const nameSet=new Set(), birthSet=new Set(), cpSet=new Set();
+    for(const ex of existing){
+      const n=`${(ex.firstName||'').trim()} ${(ex.middleName||'').trim()} ${(ex.lastName||'').trim()}`.replace(/\s+/g,' ').trim().toLowerCase();
+      if(n) nameSet.add(n);
+      if(ex.birthDate) birthSet.add(ex.birthDate);
+      if(ex.cpNumber && ex.cpNumber.trim()!=='') cpSet.add(ex.cpNumber.trim());
+    }
+
+    let importedCount=0, microBatchSize=50;
+    for(let i=0;i<json.length;i+=microBatchSize){
+      if(cancelImport) break;
+      const chunk=json.slice(i,i+microBatchSize);
+      const rowsToAdd=[];
+      for(const row of chunk){
+        // parse potential date formats
+        const birthVal = parseExcelDate(row.Birth || row.BirthDate || row.birth || '');
+        const appDateVal = parseExcelDate(row.ApplicationDate || row.Application || '');
+
+        const rec={
+          id:generate5DigitID(),
+          applicationDate:appDateVal || todayISO(),
+          firstName:row.FirstName||row.Firstname||'',
+          middleName:row.MiddleName||'',
+          lastName:row.LastName||row.Lastname||'',
+          suffix:row.Suffix||'N/A',
+          relationship:row.Relationship||'Self',
+          beneficiaryName:row.BeneficiaryName||`${row.FirstName||''} ${row.MiddleName||''} ${row.LastName||''}`.trim(),
+          school:row.School||'',
+          gradeLevel:row.GradeLevel||'',
+          schoolYear:row.SchoolYear||'2022',
+          birthDate:birthVal||'',
+          civilStatus:row.CivilStatus||'Single',
+          gender:row.Gender||'Male',
+          familyMember:row.Family||'',
+          cpNumber:(row.CP||'').toString().trim(),
+          barangay:row.Barangay||'',
+          municipality:row.Municipality||'',
+          province:row.Province||'Isabela',
+          programs:row.Programs?String(row.Programs).split('|').map(p=>p.trim()).filter(Boolean):[],
+          amount:row.Amount||'',
+          status:row.Status||'Unpaid',
+          duplicate:false
+        };
+
+        const nameKey=`${rec.firstName} ${rec.middleName} ${rec.lastName}`.replace(/\s+/g,' ').trim().toLowerCase();
+        if(nameKey && nameSet.has(nameKey)) rec.duplicate=true;
+        if(rec.birthDate && birthSet.has(rec.birthDate)) rec.duplicate=true;
+        if(rec.cpNumber && cpSet.has(rec.cpNumber)) rec.duplicate=true;
+        rowsToAdd.push(rec);
+        if(nameKey) nameSet.add(nameKey);
+        if(rec.birthDate) birthSet.add(rec.birthDate);
+        if(rec.cpNumber) cpSet.add(rec.cpNumber);
+      }
+
+      try{ await db.beneficiaries.bulkAdd(rowsToAdd); } catch(err){
+        for(const r of rowsToAdd){ try{ await db.beneficiaries.add(r); }catch(e){} }
+      }
+
+      importedCount += rowsToAdd.length;
+      const percent=Math.min(100,Math.round(importedCount/json.length*100));
+      progressBar.style.width=percent+'%';
+      progressBar.textContent=percent+'%';
+      progressText.textContent=`Imported ${importedCount}/${json.length} rows.`;
+      await new Promise(r=>setTimeout(r,5));
+    }
+    modal.style.display='none';
+    if(!cancelImport) alert(`Import completed. Total rows: ${json.length}`);
+    else alert('Import canceled by user.');
+    renderTable();
+    if(document.getElementById('reportsTab').style.display !== 'none') generateReportTable();
+  };
+  reader.readAsArrayBuffer(file);
+};
+
+// ===== Detect Duplicates =====
+document.getElementById('detectDuplicatesBtn').onclick=async()=>{
+  const arr=await db.beneficiaries.toArray();
+  let duplicatesFound=0;
+  const keyMap={};
+  for(const b of arr){
+    const fullName=`${b.firstName} ${b.middleName} ${b.lastName}`.toLowerCase().replace(/\s+/g,' ').trim();
+    const birth=(b.birthDate||'').trim();
+    const cp=(b.cpNumber||'').trim();
+    const barangay=(b.barangay||'').toLowerCase().trim();
+    const key = `${fullName}|${birth}|${cp}|${barangay}`;
+    let isDuplicate=false;
+    if(keyMap[key]) isDuplicate=true; else keyMap[key]=true;
+    b.duplicate=isDuplicate;
+    if(isDuplicate) duplicatesFound++;
+    await db.beneficiaries.put(b);
+  }
+  renderTable();
+  alert(`Duplicate Check Completed.\nFound ${duplicatesFound} duplicate records.`);
+};
+
+// Initial render
+renderTable();
+
+// ===== Tab switching logic =====
+document.getElementById("tabBeneficiaries").onclick = () => {
+  document.getElementById("beneficiariesTab").style.display = "block";
+  document.getElementById("reportsTab").style.display = "none";
+  document.getElementById("tabBeneficiaries").className = "primary";
+  document.getElementById("tabReports").className = "ghost";
+  renderTable();
+};
+
+document.getElementById("tabReports").onclick = async () => {
+  document.getElementById("beneficiariesTab").style.display = "none";
+  document.getElementById("reportsTab").style.display = "block";
+  document.getElementById("tabReports").className = "primary";
+  document.getElementById("tabBeneficiaries").className = "ghost";
+  await generateReportTable();
+};
+
+// allow manual refresh/filter on report tab
+document.getElementById('refreshReportBtn').onclick = generateReportTable;
+document.getElementById('reportFilterSchoolYear').onchange = generateReportTable;
+
+// ===== Report generation function =====
+async function generateReportTable() {
+  const tbody = document.querySelector("#reportTable tbody");
+  tbody.innerHTML = "";
+
+  const schoolFilter = document.getElementById('reportFilterSchoolYear').value;
+  const municipalityFilter = document.getElementById('reportFilterMunicipality').value;
+  const barangayFilter = document.getElementById('reportFilterBarangay').value;
+
+  const records = await db.beneficiaries.toArray();
+
+  const reportData = {};
+
+  records.forEach(rec => {
+    if (schoolFilter && rec.schoolYear !== schoolFilter) return;
+    if (municipalityFilter && rec.municipality !== municipalityFilter) return;
+    if (barangayFilter && rec.barangay !== barangayFilter) return;
+
+    const barangay = (rec.barangay && rec.barangay.trim()) ? rec.barangay.trim() : "Unknown";
+    const programs = (rec.programs && rec.programs.length) ? rec.programs : ['(No Program)'];
+
+    if (!reportData[barangay]) reportData[barangay] = {};
+    programs.forEach(program => {
+      const p = (program && program.trim()) ? program.trim() : '(No Program)';
+      if (!reportData[barangay][p]) reportData[barangay][p] = 0;
+      reportData[barangay][p]++;
+    });
+  });
+
+  // Convert to table rows (sorted)
+  const barangays = Object.keys(reportData).sort((a,b)=>a.localeCompare(b));
+  for(const bar of barangays){
+    const programs = Object.keys(reportData[bar]).sort((a,b)=>a.localeCompare(b));
+    for(const prog of programs){
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${bar}</td><td>${prog}</td><td>${reportData[bar][prog]}</td>`;
+      tbody.appendChild(tr);
+    }
+  }
+
+  // if no data, slet currentPage = 1;how message row
+  if(tbody.children.length===0){
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td colspan="3" style="text-align:center;color:#666;padding:12px">No data available for selected filters.</td>`;
+    tbody.appendChild(tr);
+  }
+}
+
+// Expose edit/delete to window for onclick inline handlers
+window.editEntry = editEntry;
+window.deleteEntry = deleteEntry;
+</script>
+</body>
+</html>
